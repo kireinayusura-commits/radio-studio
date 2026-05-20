@@ -418,11 +418,19 @@
         }
         const lt=document.getElementById('liveTranscript');
         lt.classList.remove('empty');
-        lt.innerHTML=escHTML(finalText)+'<span class="interim">'+escHTML(interim)+'</span>';
+        lt.innerHTML=escHTML(finalText+interim)+'<span class="interim"></span>';
         lt.scrollTop=lt.scrollHeight;
-        if(finalText!==lastFinalTranscript){
-          pendingUserText=finalText;lastFinalTranscript=finalText;
-          resetSilenceTimer();
+
+        // 新しく確定したテキストがある場合のみ処理
+        if(finalText!==lastFinalTranscript&&finalText.length>0){
+          const newChunk=finalText.slice(lastFinalTranscript.length).trim();
+          lastFinalTranscript=finalText;
+          if(newChunk.length>0){
+            // 累積バッファに追加
+            pendingUserText=(pendingUserText+' '+newChunk).trim();
+            // 無音検知タイマーをリセット（話の区切りを待つ）
+            resetSilenceTimer();
+          }
         }
       };
       recognition.onerror=(e)=>{console.warn('SR:',e.error);};
@@ -448,7 +456,7 @@
     document.getElementById('statusText').textContent='マイクで収録';
     document.getElementById('statusText').className='status-text';
     const text=pendingUserText.trim();
-    if(text&&text!==lastSentText){processUserSpeech(text);lastSentText=text;pendingUserText='';lastFinalTranscript='';}
+    if(text&&text!==lastSentText&&!isLoading){processUserSpeech(text);lastSentText=text;pendingUserText='';lastFinalTranscript='';}
   }
 
   function resetSilenceTimer(){
@@ -459,11 +467,13 @@
     silenceTimer=setTimeout(()=>{
       if(isSpeaking)return;
       const text=pendingUserText.trim();
-      if(text.length<minC||text===lastSentText)return;
+      // 最小文字数・重複・処理中チェック
+      if(text.length<minC||text===lastSentText||isLoading)return;
       processUserSpeech(text);
       lastSentText=text;
-      setTimeout(()=>{ lastSentText=''; },8000);
-      pendingUserText='';lastFinalTranscript='';
+      // 送信後はバッファをクリア（次の発言を新たに蓄積）
+      pendingUserText='';
+      // lastFinalTranscriptはリセットしない（音声認識の継続性を保つ）
       const lt=document.getElementById('liveTranscript');
       lt.textContent='続けて話してください...';lt.classList.add('empty');
     },delay);
@@ -524,21 +534,10 @@
 
     try{
       const msgs=getTrimmedHistory();
-      // PDFは最初のやり取りにのみ付加
-      let finalMsgs=msgs;
-      if(pdfFiles.length>0&&conversationHistory.length<=2){
-        const idx=msgs.findIndex(m=>m.role==='user');
-        if(idx>=0){
-          const pdfBlocks=pdfFiles.map(f=>({type:'document',source:{type:'base64',media_type:'application/pdf',data:f.base64}}));
-          finalMsgs=[...msgs];
-          finalMsgs[idx]={...msgs[idx],content:[...pdfBlocks,{type:'text',text:msgs[idx].content}]};
-        }
-      }
       const data=await callAPI({
         max_tokens:300,
         system:buildSystemPrompt(),
-        messages:finalMsgs,
-        // web_search removed to reduce Overloaded errors
+        messages:msgs,
       },false);
 
       const aiText=(data?.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
