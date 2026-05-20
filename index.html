@@ -733,7 +733,7 @@
     　　　　'Content-Type': 'application/json',
          },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-5',
           max_tokens: 512,
           system: sys,
           messages: getTrimmedHistory()
@@ -926,7 +926,7 @@ ${historyContext}
          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-5',
           max_tokens: 800,
           system: sys,
           messages: [{ role: 'user', content: `以下の会話を要約してください：\n\n${conversationHistory.map(m => `${m.role==='user'?'パーソナリティ':'AI'}: ${m.content}`).join('\n')}` }]
