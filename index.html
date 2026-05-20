@@ -21,10 +21,16 @@
   .logo{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:900;letter-spacing:-0.02em;}
   .logo span{color:var(--accent);}
   .header-right{display:flex;align-items:center;gap:0.75rem;}
+  .conn-badge{display:flex;align-items:center;gap:0.35rem;padding:0.3rem 0.75rem;border-radius:999px;font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;border:1px solid;transition:all 0.3s;}
+  .conn-badge.disconnected{background:rgba(107,107,138,0.12);border-color:rgba(107,107,138,0.3);color:var(--muted);}
+  .conn-badge.connecting{background:rgba(255,183,3,0.12);border-color:rgba(255,183,3,0.3);color:var(--accent2);}
+  .conn-badge.connected{background:rgba(6,214,160,0.12);border-color:rgba(6,214,160,0.3);color:var(--accent4);}
+  .conn-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .conn-badge.connected .conn-dot{animation:blink 1.5s ease-in-out infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
   .on-air-badge{display:flex;align-items:center;gap:0.35rem;background:rgba(255,77,109,0.12);border:1px solid rgba(255,77,109,0.3);padding:0.3rem 0.75rem;border-radius:999px;font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:0.15em;color:var(--accent);opacity:0;transition:opacity 0.5s;}
   .on-air-badge.active{opacity:1;}
   .on-air-dot{width:7px;height:7px;background:var(--accent);border-radius:50%;animation:blink 1s ease-in-out infinite;}
-  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
   #timer{font-family:'Space Mono',monospace;font-size:0.65rem;color:var(--muted);}
   .tab-bar{height:var(--tab-h);flex-shrink:0;display:flex;border-bottom:1px solid rgba(255,255,255,0.07);background:rgba(12,12,20,0.95);backdrop-filter:blur(12px);position:relative;z-index:15;}
   .tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;color:var(--muted);transition:color 0.2s,border-color 0.2s;font-family:'Space Mono',monospace;font-size:0.55rem;letter-spacing:0.08em;text-transform:uppercase;}
@@ -42,7 +48,7 @@
   textarea{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:12px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:0.9rem;line-height:1.7;padding:0.85rem;resize:none;outline:none;transition:border-color 0.2s,box-shadow 0.2s;-webkit-appearance:none;}
   textarea:focus{border-color:rgba(255,77,109,0.45);box-shadow:0 0 0 3px rgba(255,77,109,0.1);}
   textarea::placeholder{color:var(--muted);}
-  #scriptInput{height:155px;}
+  #scriptInput{height:150px;}
   .btn{display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.75rem 1rem;border-radius:10px;border:none;cursor:pointer;font-family:'Space Mono',monospace;font-size:0.72rem;letter-spacing:0.05em;transition:all 0.2s;font-weight:700;-webkit-appearance:none;}
   .btn-primary{background:var(--accent);color:white;width:100%;}
   .btn-primary:active{opacity:0.85;transform:scale(0.98);}
@@ -113,6 +119,7 @@
   .slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;top:3px;background:white;border-radius:50%;transition:0.3s;}
   input:checked+.slider{background:var(--accent);}
   input:checked+.slider::before{transform:translateX(18px);}
+  .server-url-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:8px;color:var(--text);font-family:'Space Mono',monospace;font-size:0.72rem;padding:0.6rem 0.8rem;outline:none;-webkit-appearance:none;}
   .file-input-wrapper{position:relative;}
   .file-input-wrapper input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
   .notification{position:fixed;top:calc(var(--header-h) + 0.75rem);left:50%;transform:translateX(-50%);z-index:1000;background:var(--surface2);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:0.7rem 1.1rem;font-size:0.82rem;max-width:90vw;text-align:center;animation:notifIn 0.3s ease-out;box-shadow:0 6px 24px rgba(0,0,0,0.5);}
@@ -140,6 +147,7 @@
   <header>
     <div class="logo">AI<span>Radio</span></div>
     <div class="header-right">
+      <div class="conn-badge disconnected" id="connBadge"><div class="conn-dot"></div><span id="connText">未接続</span></div>
       <div class="on-air-badge" id="onAirBadge"><div class="on-air-dot"></div>ON AIR</div>
       <div id="timer">00:00:00</div>
     </div>
@@ -161,7 +169,7 @@
         <div class="field-group">
           <span class="tag red">PDF</span>
           <div class="section-label">📎 参考資料（PDF・複数可）</div>
-          <div style="font-size:0.75rem;color:var(--muted);line-height:1.6;margin-bottom:0.5rem;">論文・会議資料などを読み込みます（最大32MB・100ページ）</div>
+          <div style="font-size:0.75rem;color:var(--muted);line-height:1.6;margin-bottom:0.5rem;">論文・会議資料などを読み込みます（最大32MB）</div>
           <button class="btn btn-ghost file-input-wrapper" style="width:100%;">
             📎 PDFを追加
             <input type="file" accept=".pdf" multiple onchange="addPDFs(event)">
@@ -242,12 +250,17 @@
     <!-- Settings Panel -->
     <div class="panel settings-panel scrollable" id="panelSettings">
       <div class="section-label" style="margin-bottom:1rem;">⚙️ 設定</div>
+      <div class="field-group">
+        <div class="section-label">🔗 サーバーURL</div>
+        <input class="server-url-input" id="serverUrl" type="text" placeholder="xxxxx.up.railway.app" value="">
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;">RailwayのサーバーURLを入力（https://不要）</div>
+      </div>
       <div class="toggle-row">
         <div><div class="toggle-label">音声読み上げ</div><div class="toggle-desc">AIの返答を音声で読み上げる</div></div>
         <label class="switch"><input type="checkbox" id="toggleTTS" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
-        <div><div class="toggle-label">自動送信モード</div><div class="toggle-desc">無音検知で自動的にAIへ送信</div></div>
+        <div><div class="toggle-label">無音後に自動送信</div><div class="toggle-desc">話が途切れたら自動でAIへ送信</div></div>
         <label class="switch"><input type="checkbox" id="toggleAuto" checked><span class="slider"></span></label>
       </div>
       <div class="toggle-row">
@@ -259,17 +272,9 @@
           <option value="5000">5秒</option>
         </select>
       </div>
-      <div class="toggle-row">
-        <div><div class="toggle-label">最小送信文字数</div><div class="toggle-desc">短すぎる認識は送信しない</div></div>
-        <select id="minChars" style="background:rgba(255,255,255,0.06);color:var(--text);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:0.4rem;font-family:inherit;">
-          <option value="10">10文字</option>
-          <option value="15" selected>15文字</option>
-          <option value="20">20文字</option>
-        </select>
-      </div>
       <div style="margin-top:1.5rem;">
         <div class="section-label">📊 セッション情報</div>
-        <div class="card">会話数: <span id="msgCount">0</span> / AI待機: <span id="pendingCount">0</span></div>
+        <div class="card">接続: <span id="connStatus">未接続</span><br>AI待機: <span id="pendingCount">0</span></div>
       </div>
     </div>
   </div>
@@ -287,401 +292,512 @@
   </div>
 </div>
 <script>
-  let scriptContent='', loadedSummary=null, pdfFiles=[];
-  let conversationHistory=[], pendingReplies=[];
-  let isRecording=false, isLoading=false;
-  let recognition=null, micStream=null;
-  let timerInterval=null, startTime=null;
-  let vuInterval=null, audioContext=null, analyser=null;
-  let silenceTimer=null, lastSentText='', pendingUserText='', lastFinalTranscript='';
-  let isSpeaking=false; // TTS再生中フラグ
-  let currentUtterance=null, sessionSummaryData=null;
-  const MAX_HISTORY=10;
+  // ===== Config =====
+  const DEFAULT_SERVER = 'pacific-upliftment-production-5dc8.up.railway.app';
 
-  function switchTab(t){
-    ['script','studio','settings'].forEach(k=>{
+  // ===== State =====
+  let ws = null;
+  let scriptContent = '', loadedSummary = null, pdfFiles = [];
+  let pendingReplies = [];
+  let isRecording = false, isSpeaking = false;
+  let recognition = null, micStream = null;
+  let timerInterval = null, startTime = null;
+  let vuInterval = null, audioContext = null, analyser = null;
+  let silenceTimer = null, lastSentText = '', pendingUserText = '', lastFinalTranscript = '';
+  let currentUtterance = null, sessionSummaryData = null;
+  let conversationHistory = [];
+
+  // ===== Init =====
+  document.addEventListener('DOMContentLoaded', () => {
+    const saved = localStorage.getItem('radioServerUrl');
+    document.getElementById('serverUrl').value = saved || DEFAULT_SERVER;
+    updateSignal('idle');
+    connectWS();
+  });
+
+  // ===== WebSocket =====
+  function connectWS() {
+    const host = document.getElementById('serverUrl').value.trim() || DEFAULT_SERVER;
+    const url = 'wss://' + host;
+    setConnBadge('connecting', '接続中...');
+    try {
+      ws = new WebSocket(url);
+      ws.onopen = () => {
+        setConnBadge('connected', '接続中');
+        localStorage.setItem('radioServerUrl', host);
+        showNotif('✅ サーバーに接続しました');
+      };
+      ws.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch { return; }
+        handleServerMessage(msg);
+      };
+      ws.onclose = () => {
+        setConnBadge('disconnected', '未接続');
+        // 5秒後に再接続
+        setTimeout(connectWS, 5000);
+      };
+      ws.onerror = () => {
+        setConnBadge('disconnected', 'エラー');
+      };
+    } catch (err) {
+      setConnBadge('disconnected', 'エラー');
+    }
+  }
+
+  function sendWS(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
+      return true;
+    }
+    return false;
+  }
+
+  function setConnBadge(state, text) {
+    const badge = document.getElementById('connBadge');
+    badge.className = 'conn-badge ' + state;
+    document.getElementById('connText').textContent = text;
+    document.getElementById('connStatus').textContent = text;
+  }
+
+  // ===== Handle server messages =====
+  function handleServerMessage(msg) {
+    switch(msg.type) {
+      case 'ready':
+        showNotif('✅ ' + msg.message);
+        break;
+      case 'thinking':
+        updateSignal('thinking');
+        break;
+      case 'skip':
+        updateSignal('listening');
+        break;
+      case 'reply':
+        conversationHistory.push({ role: 'assistant', content: msg.text });
+        const preview = msg.text.length > 22 ? msg.text.slice(0,20)+'...' : msg.text;
+        pendingReplies.push(msg.text);
+        updateSignal('ready', '💬「' + preview + '」');
+        updateInfo();
+        break;
+      case 'summary':
+        onSummaryReceived(msg.text);
+        break;
+      case 'error':
+        addMessage('ai', '❌ ' + msg.message);
+        updateSignal('listening');
+        break;
+    }
+  }
+
+  // ===== Tab =====
+  function switchTab(t) {
+    ['script','studio','settings'].forEach(k => {
       document.getElementById('tab'+k[0].toUpperCase()+k.slice(1))?.classList.toggle('active',k===t);
       document.getElementById('panel'+k[0].toUpperCase()+k.slice(1))?.classList.toggle('active',k===t);
     });
   }
 
-  function startTimer(){
-    startTime=Date.now();
-    timerInterval=setInterval(()=>{
-      const e=Date.now()-startTime;
-      document.getElementById('timer').textContent=
+  // ===== Timer =====
+  function startTimer() {
+    startTime = Date.now();
+    timerInterval = setInterval(() => {
+      const e = Date.now()-startTime;
+      document.getElementById('timer').textContent =
         [Math.floor(e/3600000),Math.floor((e%3600000)/60000),Math.floor((e%60000)/1000)]
         .map(n=>String(n).padStart(2,'0')).join(':');
     },1000);
   }
-  function stopTimer(){clearInterval(timerInterval);}
+  function stopTimer() { clearInterval(timerInterval); }
 
-  async function addPDFs(event){
-    for(const file of Array.from(event.target.files)){
-      if(file.size>32*1024*1024){showNotif('⚠️ '+file.name+' は32MB超のため除外');continue;}
-      const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(',')[1]);r.onerror=rej;r.readAsDataURL(file);});
-      pdfFiles.push({name:file.name,base64:b64});
+  // ===== PDF =====
+  async function addPDFs(event) {
+    for(const file of Array.from(event.target.files)) {
+      if(file.size > 32*1024*1024) { showNotif('⚠️ '+file.name+' は32MB超'); continue; }
+      pdfFiles.push({ name: file.name, file });
     }
     renderPDFList();
-    event.target.value='';
+    event.target.value = '';
   }
-  function renderPDFList(){
-    document.getElementById('pdfList').innerHTML=pdfFiles.map((f,i)=>
+  function renderPDFList() {
+    document.getElementById('pdfList').innerHTML = pdfFiles.map((f,i) =>
       '<div class="pdf-item"><span>📄 '+escHTML(f.name)+'</span><button class="pdf-remove" onclick="removePDF('+i+')">✕</button></div>'
     ).join('');
   }
-  function removePDF(i){pdfFiles.splice(i,1);renderPDFList();}
+  function removePDF(i) { pdfFiles.splice(i,1); renderPDFList(); }
 
-  function loadSummaryFile(event){
-    const file=event.target.files[0];
-    if(!file)return;
-    const r=new FileReader();
-    r.onload=(e)=>{
-      try{
-        loadedSummary=JSON.parse(e.target.result);
-        document.getElementById('loadedSummaryContent').textContent=formatSummary(loadedSummary);
-        document.getElementById('loadedSummaryDisplay').style.display='block';
+  // ===== Summary =====
+  function loadSummaryFile(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    const r = new FileReader();
+    r.onload = (e) => {
+      try {
+        loadedSummary = JSON.parse(e.target.result);
+        document.getElementById('loadedSummaryContent').textContent = formatSummary(loadedSummary);
+        document.getElementById('loadedSummaryDisplay').style.display = 'block';
         showNotif('✅ 過去の履歴を読み込みました');
-      }catch{showNotif('❌ ファイル形式が正しくありません');}
+      } catch { showNotif('❌ ファイル形式が正しくありません'); }
     };
     r.readAsText(file);
   }
-  function formatSummary(data){
-    if(!data.sessions?.length)return '（履歴なし）';
-    let out='📚 全'+data.sessions.length+'回分の収録履歴\n\n';
-    data.sessions.slice(-3).forEach(s=>{out+='【'+s.date+' 第'+s.episode+'回】\n'+s.summary+'\n\n';});
-    if(data.sessions.length>3)out+='... 他'+(data.sessions.length-3)+'回分は省略';
+  function formatSummary(data) {
+    if(!data.sessions?.length) return '（履歴なし）';
+    let out = '📚 全'+data.sessions.length+'回分の収録履歴\n\n';
+    data.sessions.slice(-3).forEach(s => { out += '【'+s.date+' 第'+s.episode+'回】\n'+s.summary+'\n\n'; });
+    if(data.sessions.length > 3) out += '... 他'+(data.sessions.length-3)+'回分は省略';
     return out.trim();
   }
-  function clearLoadedSummary(){
-    loadedSummary=null;
-    document.getElementById('loadedSummaryDisplay').style.display='none';
+  function clearLoadedSummary() {
+    loadedSummary = null;
+    document.getElementById('loadedSummaryDisplay').style.display = 'none';
     showNotif('🗑️ 履歴をクリアしました');
   }
 
-  function setupShow(){
-    const val=document.getElementById('scriptInput').value.trim();
-    if(!val){showNotif('⚠️ 番組資料を入力してください');return;}
-    scriptContent=val;
-    document.getElementById('scriptDisplay').textContent=val;
-    document.getElementById('scriptInputArea').style.display='none';
-    const da=document.getElementById('scriptDisplayArea');
-    da.style.display='flex';da.style.flexDirection='column';
-    if(pdfFiles.length>0){
-      document.getElementById('pdfActiveArea').style.display='block';
-      document.getElementById('pdfActiveList').innerHTML=pdfFiles.map(f=>'<div class="pdf-item"><span>📄 '+escHTML(f.name)+'</span></div>').join('');
+  // ===== Setup =====
+  async function setupShow() {
+    const val = document.getElementById('scriptInput').value.trim();
+    if(!val) { showNotif('⚠️ 番組資料を入力してください'); return; }
+    if(!ws || ws.readyState !== WebSocket.OPEN) { showNotif('⚠️ サーバーに接続されていません'); return; }
+
+    scriptContent = val;
+    showNotif('📤 PDFをサーバーへ送信中...');
+
+    // PDFをサーバーへアップロードしてテキスト抽出
+    const pdfTexts = [];
+    for(const pdfFile of pdfFiles) {
+      try {
+        const host = document.getElementById('serverUrl').value.trim() || DEFAULT_SERVER;
+        const res = await fetch('https://'+host+'/upload-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/pdf' },
+          body: pdfFile.file
+        });
+        const data = await res.json();
+        if(data.text) pdfTexts.push(data.text);
+      } catch(err) {
+        showNotif('⚠️ '+pdfFile.name+' の読み込みに失敗しました');
+      }
     }
-    if(loadedSummary){
-      document.getElementById('loadedSummaryActive').textContent=formatSummary(loadedSummary);
-      document.getElementById('loadedSummaryActiveArea').style.display='block';
+
+    // サーバーへ番組設定を送信
+    sendWS({
+      type: 'setup',
+      scriptContent: val,
+      pdfTexts,
+      summaryHistory: loadedSummary
+    });
+
+    // UI更新
+    document.getElementById('scriptDisplay').textContent = val;
+    document.getElementById('scriptInputArea').style.display = 'none';
+    const da = document.getElementById('scriptDisplayArea');
+    da.style.display = 'flex'; da.style.flexDirection = 'column';
+    if(pdfFiles.length > 0) {
+      document.getElementById('pdfActiveArea').style.display = 'block';
+      document.getElementById('pdfActiveList').innerHTML = pdfFiles.map(f=>'<div class="pdf-item"><span>📄 '+escHTML(f.name)+'</span></div>').join('');
     }
-    showNotif('✅ 収録準備完了');
+    if(loadedSummary) {
+      document.getElementById('loadedSummaryActive').textContent = formatSummary(loadedSummary);
+      document.getElementById('loadedSummaryActiveArea').style.display = 'block';
+    }
+    conversationHistory = [];
     startTimer();
     document.getElementById('onAirBadge').classList.add('active');
-    document.getElementById('emptyState').innerHTML='<div class="empty-icon">🎙️</div><strong style="font-family:\'Playfair Display\',serif;font-size:1.1rem;">スタンバイOK</strong><p>マイクボタンを押して話し始めてください。<br>AIが🎯サインを出したらタップして返答を聞けます。</p>';
+    document.getElementById('emptyState').innerHTML =
+      '<div class="empty-icon">🎙️</div>' +
+      '<strong style="font-family:\'Playfair Display\',serif;font-size:1.1rem;">スタンバイOK</strong>' +
+      '<p>マイクボタンを押して話し始めてください。<br>AIが🎯サインを出したらタップして返答を聞けます。</p>';
     switchTab('studio');
   }
 
-  function resetShow(){
-    if(!confirm('番組設定をリセットしますか？'))return;
-    scriptContent='';conversationHistory=[];pendingReplies=[];pdfFiles=[];renderPDFList();
-    document.getElementById('scriptDisplayArea').style.display='none';
-    document.getElementById('scriptInputArea').style.display='block';
-    document.getElementById('pdfActiveArea').style.display='none';
-    document.getElementById('loadedSummaryActiveArea').style.display='none';
+  function resetShow() {
+    if(!confirm('番組設定をリセットしますか？')) return;
+    scriptContent = ''; pdfFiles = []; renderPDFList(); conversationHistory = []; pendingReplies = [];
+    document.getElementById('scriptDisplayArea').style.display = 'none';
+    document.getElementById('scriptInputArea').style.display = 'block';
+    document.getElementById('pdfActiveArea').style.display = 'none';
+    document.getElementById('loadedSummaryActiveArea').style.display = 'none';
     stopTimer();
     document.getElementById('onAirBadge').classList.remove('active');
-    document.getElementById('timer').textContent='00:00:00';
+    document.getElementById('timer').textContent = '00:00:00';
     updateSignal('idle');
-    document.getElementById('conversation').innerHTML='<div class="empty-state" id="emptyState"><div class="empty-icon">🎙️</div><strong style="font-family:\'Playfair Display\',serif;font-size:1.1rem;">番組を始めましょう</strong><p>「台本」タブで資料を共有してから、マイクボタンで収録スタート！</p></div>';
+    document.getElementById('conversation').innerHTML =
+      '<div class="empty-state" id="emptyState">' +
+      '<div class="empty-icon">🎙️</div>' +
+      '<strong style="font-family:\'Playfair Display\',serif;font-size:1.1rem;">番組を始めましょう</strong>' +
+      '<p>「台本」タブで資料を共有してから、マイクボタンで収録スタート！</p>' +
+      '</div>';
     updateInfo();
   }
 
-  async function toggleRecording(){
-    if(!scriptContent){showNotif('⚠️ 先に番組準備をしてください');return;}
-    isRecording?stopRecording():await startRecording();
+  // ===== Recording =====
+  async function toggleRecording() {
+    if(!scriptContent) { showNotif('⚠️ 先に番組準備をしてください'); return; }
+    if(!ws || ws.readyState !== WebSocket.OPEN) { showNotif('⚠️ サーバーに接続されていません'); return; }
+    isRecording ? stopRecording() : await startRecording();
   }
 
-  async function startRecording(){
-    try{
-      micStream=await navigator.mediaDevices.getUserMedia({audio:true});
-      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!SR){showNotif('❌ 音声認識非対応のブラウザです');return;}
-      recognition=new SR();
-      recognition.lang='ja-JP';recognition.continuous=true;recognition.interimResults=true;
-      lastFinalTranscript='';
-      recognition.onresult=(ev)=>{
-        let finalText='',interim='';
-        for(let i=0;i<ev.results.length;i++){
-          if(ev.results[i].isFinal)finalText+=ev.results[i][0].transcript;
-          else interim+=ev.results[i][0].transcript;
-        }
-        const lt=document.getElementById('liveTranscript');
-        lt.classList.remove('empty');
-        lt.innerHTML=escHTML(finalText+interim)+'<span class="interim"></span>';
-        lt.scrollTop=lt.scrollHeight;
+  async function startRecording() {
+    try {
+      micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SR) { showNotif('❌ 音声認識非対応のブラウザです'); return; }
+      recognition = new SR();
+      recognition.lang = 'ja-JP';
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      lastFinalTranscript = '';
 
-        // 新しく確定したテキストがある場合のみ処理
-        if(finalText!==lastFinalTranscript&&finalText.length>0){
-          const newChunk=finalText.slice(lastFinalTranscript.length).trim();
-          lastFinalTranscript=finalText;
-          if(newChunk.length>0){
-            // 累積バッファに追加
-            pendingUserText=(pendingUserText+' '+newChunk).trim();
-            // 無音検知タイマーをリセット（話の区切りを待つ）
+      recognition.onresult = (ev) => {
+        if(isSpeaking) return; // TTS中は認識しない
+        let finalText = '', interim = '';
+        for(let i = 0; i < ev.results.length; i++) {
+          if(ev.results[i].isFinal) finalText += ev.results[i][0].transcript;
+          else interim += ev.results[i][0].transcript;
+        }
+        const lt = document.getElementById('liveTranscript');
+        lt.classList.remove('empty');
+        lt.innerHTML = escHTML(finalText) + '<span class="interim">' + escHTML(interim) + '</span>';
+        lt.scrollTop = lt.scrollHeight;
+
+        // 新しく確定したテキストをバッファに追加
+        if(finalText !== lastFinalTranscript && finalText.length > 0) {
+          const newChunk = finalText.slice(lastFinalTranscript.length).trim();
+          lastFinalTranscript = finalText;
+          if(newChunk.length > 0) {
+            pendingUserText = (pendingUserText + ' ' + newChunk).trim();
             resetSilenceTimer();
           }
         }
       };
-      recognition.onerror=(e)=>{console.warn('SR:',e.error);};
-      recognition.onend=()=>{if(isRecording){try{recognition.start();}catch(e){}}};
+      recognition.onerror = (e) => { console.warn('SR:', e.error); };
+      recognition.onend = () => { if(isRecording && !isSpeaking) { try{recognition.start();}catch(e){} } };
       recognition.start();
       setupVU(micStream);
-      isRecording=true;
-      const btn=document.getElementById('recordBtn');
-      btn.className='record-btn recording';btn.textContent='⏹';
-      document.getElementById('statusText').textContent='● 収録中...';
-      document.getElementById('statusText').className='status-text recording';
+      isRecording = true;
+      const btn = document.getElementById('recordBtn');
+      btn.className = 'record-btn recording'; btn.textContent = '⏹';
+      document.getElementById('statusText').textContent = '● 収録中...';
+      document.getElementById('statusText').className = 'status-text recording';
       updateSignal('listening');
-    }catch(err){showNotif('❌ マイクを許可してください');console.error(err);}
+    } catch(err) {
+      showNotif('❌ マイクを許可してください'); console.error(err);
+    }
   }
 
-  function stopRecording(){
-    if(recognition){try{recognition.stop();}catch(e){}recognition=null;}
-    if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;}
-    clearInterval(vuInterval);resetVU();clearTimeout(silenceTimer);
-    isRecording=false;
-    const btn=document.getElementById('recordBtn');
-    btn.className='record-btn idle';btn.textContent='🎙️';
-    document.getElementById('statusText').textContent='マイクで収録';
-    document.getElementById('statusText').className='status-text';
-    const text=pendingUserText.trim();
-    if(text&&text!==lastSentText&&!isLoading){processUserSpeech(text);lastSentText=text;pendingUserText='';lastFinalTranscript='';}
+  function stopRecording() {
+    if(recognition) { try{recognition.stop();}catch(e){} recognition = null; }
+    if(micStream) { micStream.getTracks().forEach(t=>t.stop()); micStream = null; }
+    clearInterval(vuInterval); resetVU(); clearTimeout(silenceTimer);
+    isRecording = false;
+    const btn = document.getElementById('recordBtn');
+    btn.className = 'record-btn idle'; btn.textContent = '🎙️';
+    document.getElementById('statusText').textContent = 'マイクで収録';
+    document.getElementById('statusText').className = 'status-text';
+    const text = pendingUserText.trim();
+    if(text && text !== lastSentText) { sendSpeech(text); }
   }
 
-  function resetSilenceTimer(){
+  function resetSilenceTimer() {
     clearTimeout(silenceTimer);
-    if(!document.getElementById('toggleAuto').checked)return;
-    const delay=parseInt(document.getElementById('silenceDelay').value,10);
-    const minC=parseInt(document.getElementById('minChars').value,10);
-    silenceTimer=setTimeout(()=>{
-      if(isSpeaking)return;
-      const text=pendingUserText.trim();
-      // 最小文字数・重複・処理中チェック
-      if(text.length<minC||text===lastSentText||isLoading)return;
-      processUserSpeech(text);
-      lastSentText=text;
-      // 送信後はバッファをクリア（次の発言を新たに蓄積）
-      pendingUserText='';
-      // lastFinalTranscriptはリセットしない（音声認識の継続性を保つ）
-      const lt=document.getElementById('liveTranscript');
-      lt.textContent='続けて話してください...';lt.classList.add('empty');
-    },delay);
+    if(!document.getElementById('toggleAuto').checked) return;
+    const delay = parseInt(document.getElementById('silenceDelay').value, 10);
+    silenceTimer = setTimeout(() => {
+      if(isSpeaking) return;
+      const text = pendingUserText.trim();
+      if(text.length < 10 || text === lastSentText) return;
+      sendSpeech(text);
+      pendingUserText = '';
+      const lt = document.getElementById('liveTranscript');
+      lt.textContent = '続けて話してください...'; lt.classList.add('empty');
+    }, delay);
   }
 
-  function manualSend(){
-    const text=pendingUserText.trim()||document.getElementById('liveTranscript').textContent.trim();
-    if(!text||['マイクをONにすると話した内容がここに表示されます','続けて話してください...'].includes(text)){showNotif('⚠️ 送信する内容がありません');return;}
-    if(text===lastSentText){showNotif('⚠️ 同じ内容は送信済みです');return;}
-    processUserSpeech(text);lastSentText=text;pendingUserText='';lastFinalTranscript='';
-    const lt=document.getElementById('liveTranscript');lt.textContent='続けて話してください...';lt.classList.add('empty');
+  function sendSpeech(text) {
+    lastSentText = text;
+    conversationHistory.push({ role: 'user', content: text });
+    addMessage('user', text);
+    sendWS({ type: 'speech', text });
+    setTimeout(() => { lastSentText = ''; }, 8000);
   }
 
-  function setupVU(stream){
-    audioContext=new (window.AudioContext||window.webkitAudioContext)();
-    analyser=audioContext.createAnalyser();
+  function manualSend() {
+    const text = pendingUserText.trim();
+    if(!text || text === lastSentText) { showNotif('⚠️ 送信する内容がありません'); return; }
+    sendSpeech(text);
+    pendingUserText = ''; lastFinalTranscript = '';
+    const lt = document.getElementById('liveTranscript');
+    lt.textContent = '続けて話してください...'; lt.classList.add('empty');
+  }
+
+  // ===== VU =====
+  function setupVU(stream) {
+    audioContext = new (window.AudioContext||window.webkitAudioContext)();
+    analyser = audioContext.createAnalyser();
     audioContext.createMediaStreamSource(stream).connect(analyser);
-    analyser.fftSize=32;
-    const data=new Uint8Array(analyser.frequencyBinCount);
-    const bars=document.querySelectorAll('.vu-bar');
-    vuInterval=setInterval(()=>{
+    analyser.fftSize = 32;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const bars = document.querySelectorAll('.vu-bar');
+    vuInterval = setInterval(() => {
       analyser.getByteFrequencyData(data);
-      bars.forEach((bar,i)=>{const h=Math.max(4,(data[i]||0)/255*18);bar.style.height=h+'px';bar.style.background=h>14?'#ff4d6d':h>9?'#ffb703':'#4cc9f0';});
+      bars.forEach((bar,i) => {
+        const h = Math.max(4,(data[i]||0)/255*18);
+        bar.style.height = h+'px';
+        bar.style.background = h>14?'#ff4d6d':h>9?'#ffb703':'#4cc9f0';
+      });
     },80);
   }
-  function resetVU(){
+  function resetVU() {
     document.querySelectorAll('.vu-bar').forEach(b=>{b.style.height='4px';b.style.background='#4cc9f0';});
     if(audioContext){try{audioContext.close();}catch(e){}audioContext=null;}
     clearInterval(vuInterval);
   }
 
-  function updateSignal(state,text){
-    const sig=document.getElementById('aiSignal');
-    const map={idle:['💭','スタンバイ中','収録を開始してください'],listening:['👂','聞いています...','話を続けてください'],thinking:['⚙️','考えています...','まもなく返答準備完了'],ready:['🎯',text||'返答したがっています','タップで返答を聞く →'],speaking:['🔊','返答中...','タップで停止']};
-    const [ic,tx,hn]=map[state]||map.idle;
-    document.getElementById('signalIcon').textContent=ic;
-    document.getElementById('signalText').textContent=tx;
-    document.getElementById('signalHint').textContent=hn;
-    sig.classList.toggle('ready',state==='ready');
+  // ===== Signal =====
+  function updateSignal(state, text) {
+    const sig = document.getElementById('aiSignal');
+    const map = {
+      idle:      ['💭','スタンバイ中','収録を開始してください'],
+      listening: ['👂','聞いています...','話を続けてください'],
+      thinking:  ['⚙️','考えています...','まもなく返答準備完了'],
+      ready:     ['🎯', text||'返答したがっています','タップで返答を聞く →'],
+      speaking:  ['🔊','返答中...','タップで停止'],
+    };
+    const [ic,tx,hn] = map[state]||map.idle;
+    document.getElementById('signalIcon').textContent = ic;
+    document.getElementById('signalText').textContent = tx;
+    document.getElementById('signalHint').textContent = hn;
+    sig.classList.toggle('ready', state==='ready');
   }
 
-  async function callAPI(body,useSonnet=false){
-    const model=useSonnet?'claude-sonnet-4-5':'claude-haiku-4-5-20251001';
-    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,model})});
-    const data=await res.json().catch(()=>null);
-    if(!res.ok)throw new Error(data?.error?.message||'HTTPエラー '+res.status);
-    return data;
-  }
-
-  async function processUserSpeech(userText){
-    if(isLoading)return;
-    isLoading=true;
-    const empty=document.getElementById('emptyState');
-    if(empty)empty.remove();
-    addMessage('user',userText);
-    conversationHistory.push({role:'user',content:userText});
-    updateSignal('thinking');updateInfo();
-
-    try{
-      const msgs=getTrimmedHistory();
-      const data=await callAPI({
-        max_tokens:300,
-        system:buildSystemPrompt(),
-        messages:msgs,
-      },false);
-
-      const aiText=(data?.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
-      if(!aiText||aiText.startsWith('[SKIP]')){
-        updateSignal('listening');
-      }else{
-        const preview=aiText.length>22?aiText.slice(0,20)+'...':aiText;
-        pendingReplies.push(aiText);
-        updateSignal('ready','💬「'+preview+'」');
-      }
-    }catch(err){
-      console.error(err);
-      addMessage('ai','❌ エラー: '+err.message);
-      if(conversationHistory.at(-1)?.role==='user')conversationHistory.pop();
-      updateSignal('listening');
+  // ===== Signal Click =====
+  function onSignalClick() {
+    if(currentUtterance) {
+      window.speechSynthesis.cancel(); currentUtterance = null; isSpeaking = false;
+      updateSignal(pendingReplies.length > 0 ? 'ready' : 'listening');
+      return;
     }
-    isLoading=false;updateInfo();
-  }
-
-  function buildSystemPrompt(){
-    let histCtx='';
-    if(loadedSummary?.sessions?.length){
-      histCtx='\n【過去の収録履歴】\n'+loadedSummary.sessions.slice(-3).map(s=>'■'+s.date+' 第'+s.episode+'回\n'+s.summary).join('\n\n');
-    }
-    const pdfCtx=pdfFiles.length>0?'\n【参考資料】'+pdfFiles.map(f=>f.name).join('、')+'（添付済み）':'';
-    return 'あなたはラジオ番組のAIパーソナリティです。パーソナリティの話を聞いて、絶妙なタイミングで一言返します。\n\n【今回の番組資料】\n'+scriptContent+pdfCtx+histCtx+'\n\n【割り込み判断】\n返答すべき場面：\n- 話題が一区切りついた（「〜ました」「なんですよね」など結論が出た）\n- 笑い・照れ・自分ツッコみなど一呼吸おくサイン\n- 具体的なキーワードや体験談が出て深掘りできる\n- 「どう思う？」などのフリ\nまだ話の途中なら必ず「[SKIP]」とだけ返してください。\n\n【返答スタイル】\n- 60〜100文字の短い口語体\n- 必ず相槌か共感から始める（「あー」「それ分かる！」「へえ〜」など）\n- 質問は一つだけシンプルに\n- 知らない話題は「どんな感じでした？」と体験を引き出す\n- 最新情報が必要な場面では積極的にweb_searchを使う\n- 過去の収録の話題は自然に参照する\n- 文末は「〜ですよね」「〜じゃないですか」など話し言葉で';
-  }
-
-  function getTrimmedHistory(){
-    const max=MAX_HISTORY*2;
-    if(conversationHistory.length<=max)return conversationHistory;
-    const s=conversationHistory.slice(-max);
-    return s[0].role==='assistant'?s.slice(1):s;
-  }
-
-  function onSignalClick(){
-    if(currentUtterance){window.speechSynthesis.cancel();currentUtterance=null;updateSignal(pendingReplies.length>0?'ready':'listening');return;}
-    if(!pendingReplies.length)return;
-    const reply=pendingReplies.shift();
-    addMessage('ai',reply);
-    conversationHistory.push({role:'assistant',content:reply});
-    if(document.getElementById('toggleTTS').checked)speakText(reply);
-    else updateSignal(pendingReplies.length>0?'ready':'listening');
+    if(!pendingReplies.length) return;
+    const reply = pendingReplies.shift();
+    if(document.getElementById('toggleTTS').checked) speakText(reply);
+    else updateSignal(pendingReplies.length > 0 ? 'ready' : 'listening');
     updateInfo();
   }
 
-  function speakText(text){
-    if(!('speechSynthesis'in window)){updateSignal('listening');return;}
+  // ===== TTS =====
+  function speakText(text) {
+    if(!('speechSynthesis' in window)) { updateSignal('listening'); return; }
     window.speechSynthesis.cancel();
-    // TTS再生中は音声認識を一時停止してハウリング防止
-    isSpeaking=true;
-    if(recognition){try{recognition.stop();}catch(e){}}
-    const u=new SpeechSynthesisUtterance(text);
-    u.lang='ja-JP';u.rate=1.05;u.pitch=1.0;
-    const jp=window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('ja'));
-    if(jp)u.voice=jp;
-    currentUtterance=u;updateSignal('speaking');
-    const onFinish=()=>{
-      currentUtterance=null;
-      isSpeaking=false;
-      // TTS終了後に音声認識を再開
-      if(isRecording&&recognition){
-        setTimeout(()=>{
+    isSpeaking = true;
+    if(recognition) { try{recognition.stop();}catch(e){} }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = 1.05; u.pitch = 1.0;
+    const jp = window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('ja'));
+    if(jp) u.voice = jp;
+    currentUtterance = u;
+    updateSignal('speaking');
+    const onFinish = () => {
+      currentUtterance = null; isSpeaking = false;
+      if(isRecording && recognition) {
+        setTimeout(() => {
           try{recognition.start();}catch(e){}
-          pendingUserText='';lastFinalTranscript='';lastSentText='';
-        },500);
+          pendingUserText = ''; lastFinalTranscript = ''; lastSentText = '';
+        }, 600);
       }
-      updateSignal(pendingReplies.length>0?'ready':'listening');
+      updateSignal(pendingReplies.length > 0 ? 'ready' : 'listening');
     };
-    u.onend=onFinish;
-    u.onerror=onFinish;
+    u.onend = onFinish; u.onerror = onFinish;
     window.speechSynthesis.speak(u);
   }
 
-  function addMessage(role,text){
-    const conv=document.getElementById('conversation');
-    const div=document.createElement('div');
-    const isAI=role==='ai';
-    div.className='message '+role;
-    const id='m'+Date.now()+Math.random().toString(36).slice(2,5);
-    div.innerHTML='<div class="avatar '+(isAI?'ai':'usr')+'">'+(isAI?'🤖':'🎙️')+'</div><div class="bubble"><div class="bubble-label">'+(isAI?'AI':'あなた')+(isAI?'<button class="speak-btn" onclick="replayTTS(this,\''+id+'\')">🔊</button>':'')+'</div><div id="'+id+'">'+escHTML(text)+'</div></div>';
-    conv.appendChild(div);conv.scrollTop=conv.scrollHeight;
+  // ===== UI =====
+  function addMessage(role, text) {
+    const conv = document.getElementById('conversation');
+    const div = document.createElement('div');
+    const isAI = role === 'ai';
+    div.className = 'message ' + role;
+    const id = 'm'+Date.now()+Math.random().toString(36).slice(2,5);
+    div.innerHTML =
+      '<div class="avatar '+(isAI?'ai':'usr')+'">'+(isAI?'🤖':'🎙️')+'</div>' +
+      '<div class="bubble">' +
+      '<div class="bubble-label">'+(isAI?'AI':'あなた')+
+      (isAI?'<button class="speak-btn" onclick="replayTTS(this,\''+id+'\')">🔊</button>':'')+
+      '</div>' +
+      '<div id="'+id+'">'+escHTML(text)+'</div>' +
+      '</div>';
+    conv.appendChild(div); conv.scrollTop = conv.scrollHeight;
   }
 
-  function escHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);}
+  function escHTML(s) {
+    return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  }
 
-  function replayTTS(btn,id){
-    const text=document.getElementById(id)?.textContent||'';
-    if(!text)return;
+  function replayTTS(btn, id) {
+    const text = document.getElementById(id)?.textContent||'';
+    if(!text) return;
     document.querySelectorAll('.speak-btn').forEach(b=>b.classList.remove('playing'));
     btn.classList.add('playing');
     window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text);u.lang='ja-JP';u.rate=1.05;
-    const jp=window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('ja'));
-    if(jp)u.voice=jp;
-    u.onend=()=>btn.classList.remove('playing');u.onerror=()=>btn.classList.remove('playing');
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang='ja-JP'; u.rate=1.05;
+    const jp = window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('ja'));
+    if(jp) u.voice = jp;
+    u.onend = () => btn.classList.remove('playing');
+    u.onerror = () => btn.classList.remove('playing');
     window.speechSynthesis.speak(u);
   }
 
-  function updateInfo(){
-    document.getElementById('msgCount').textContent=conversationHistory.length;
-    document.getElementById('pendingCount').textContent=pendingReplies.length;
+  function updateInfo() {
+    document.getElementById('pendingCount').textContent = pendingReplies.length;
   }
 
-  async function endShow(){
-    if(!conversationHistory.length){showNotif('⚠️ まだ会話がありません');return;}
-    if(!confirm('番組を終了してサマリーを生成しますか？'))return;
-    if(isRecording)stopRecording();
+  // ===== End Show =====
+  async function endShow() {
+    if(!conversationHistory.length) { showNotif('⚠️ まだ会話がありません'); return; }
+    if(!confirm('番組を終了してサマリーを生成しますか？')) return;
+    if(isRecording) stopRecording();
     showNotif('📝 サマリー生成中...');
-    try{
-      const convText=conversationHistory.map(m=>(m.role==='user'?'パーソナリティ':'AI')+': '+(typeof m.content==='string'?m.content:'[資料付き]')).join('\n');
-      const data=await callAPI({
-        max_tokens:500,
-        system:'ラジオ番組の収録会話を以下のフォーマットで簡潔に要約してください（200〜250文字程度）。\n\n【出力フォーマット】\n- 主な話題：（3〜4個の箇条書き）\n- 印象的な発言：（1個）\n- 次回への持ち越し：（あれば）\n- パーソナリティの傾向：（話し方の特徴を一言）',
-        messages:[{role:'user',content:'以下の会話を要約してください：\n\n'+convText}]
-      },true);
-      const summaryText=data?.content?.[0]?.text||'（生成失敗）';
-      const today=new Date().toISOString().split('T')[0];
-      sessionSummaryData={
-        program:scriptContent.split('\n')[0].slice(0,50),
-        sessions:[...(loadedSummary?.sessions||[]),{date:today,episode:(loadedSummary?.sessions?.length||0)+1,summary:summaryText,messageCount:conversationHistory.length}]
-      };
-      document.getElementById('summaryPreview').textContent=formatSummary(sessionSummaryData);
-      document.getElementById('summaryModal').classList.add('active');
-    }catch(err){showNotif('❌ サマリー生成失敗: '+err.message);}
+    sendWS({ type: 'generate_summary' });
   }
 
-  function downloadSummary(){
-    if(!sessionSummaryData)return;
-    const blob=new Blob([JSON.stringify(sessionSummaryData,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob);const a=document.createElement('a');
-    a.href=url;a.download='radio-summary-'+new Date().toISOString().split('T')[0]+'.json';
-    a.click();URL.revokeObjectURL(url);closeSummaryModal();showNotif('💾 サマリーをダウンロードしました');
+  function onSummaryReceived(summaryText) {
+    const today = new Date().toISOString().split('T')[0];
+    sessionSummaryData = {
+      program: scriptContent.split('\n')[0].slice(0,50),
+      sessions: [...(loadedSummary?.sessions||[]), {
+        date: today,
+        episode: (loadedSummary?.sessions?.length||0)+1,
+        summary: summaryText,
+        messageCount: conversationHistory.length
+      }]
+    };
+    document.getElementById('summaryPreview').textContent = formatSummary(sessionSummaryData);
+    document.getElementById('summaryModal').classList.add('active');
   }
-  function closeSummaryModal(){document.getElementById('summaryModal').classList.remove('active');}
 
-  function showNotif(msg){
+  function downloadSummary() {
+    if(!sessionSummaryData) return;
+    const blob = new Blob([JSON.stringify(sessionSummaryData,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='radio-summary-'+new Date().toISOString().split('T')[0]+'.json';
+    a.click(); URL.revokeObjectURL(url);
+    closeSummaryModal(); showNotif('💾 サマリーをダウンロードしました');
+  }
+  function closeSummaryModal() { document.getElementById('summaryModal').classList.remove('active'); }
+
+  function showNotif(msg) {
     document.querySelectorAll('.notification').forEach(n=>n.remove());
-    const n=document.createElement('div');n.className='notification';n.textContent=msg;
-    document.body.appendChild(n);setTimeout(()=>n.remove(),3000);
+    const n = document.createElement('div');
+    n.className = 'notification'; n.textContent = msg;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 3500);
   }
 
-  if('speechSynthesis'in window){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices();}
-  document.addEventListener('DOMContentLoaded',()=>{updateSignal('idle');updateInfo();});
+  if('speechSynthesis' in window) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }
 </script>
 </body>
 </html>
