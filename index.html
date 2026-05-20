@@ -294,6 +294,7 @@
   let timerInterval=null, startTime=null;
   let vuInterval=null, audioContext=null, analyser=null;
   let silenceTimer=null, lastSentText='', pendingUserText='', lastFinalTranscript='';
+  let isSpeaking=false; // TTS再生中フラグ
   let currentUtterance=null, sessionSummaryData=null;
   const MAX_HISTORY=10;
 
@@ -456,9 +457,13 @@
     const delay=parseInt(document.getElementById('silenceDelay').value,10);
     const minC=parseInt(document.getElementById('minChars').value,10);
     silenceTimer=setTimeout(()=>{
+      if(isSpeaking)return;
       const text=pendingUserText.trim();
       if(text.length<minC||text===lastSentText)return;
-      processUserSpeech(text);lastSentText=text;pendingUserText='';lastFinalTranscript='';
+      processUserSpeech(text);
+      lastSentText=text;
+      setTimeout(()=>{ lastSentText=''; },8000);
+      pendingUserText='';lastFinalTranscript='';
       const lt=document.getElementById('liveTranscript');
       lt.textContent='続けて話してください...';lt.classList.add('empty');
     },delay);
@@ -501,7 +506,7 @@
   }
 
   async function callAPI(body,useSonnet=false){
-    const model=useSonnet?'claude-sonnet-4-5':'claude-haiku-4-5';
+    const model=useSonnet?'claude-sonnet-4-5':'claude-haiku-4-5-20251001';
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,model})});
     const data=await res.json().catch(()=>null);
     if(!res.ok)throw new Error(data?.error?.message||'HTTPエラー '+res.status);
@@ -533,7 +538,7 @@
         max_tokens:300,
         system:buildSystemPrompt(),
         messages:finalMsgs,
-        tools:[{type:'web_search_20250305',name:'web_search'}]
+        // web_search removed to reduce Overloaded errors
       },false);
 
       const aiText=(data?.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('').trim();
@@ -583,13 +588,28 @@
   function speakText(text){
     if(!('speechSynthesis'in window)){updateSignal('listening');return;}
     window.speechSynthesis.cancel();
+    // TTS再生中は音声認識を一時停止してハウリング防止
+    isSpeaking=true;
+    if(recognition){try{recognition.stop();}catch(e){}}
     const u=new SpeechSynthesisUtterance(text);
     u.lang='ja-JP';u.rate=1.05;u.pitch=1.0;
     const jp=window.speechSynthesis.getVoices().find(v=>v.lang.startsWith('ja'));
     if(jp)u.voice=jp;
     currentUtterance=u;updateSignal('speaking');
-    u.onend=()=>{currentUtterance=null;updateSignal(pendingReplies.length>0?'ready':'listening');};
-    u.onerror=()=>{currentUtterance=null;updateSignal(pendingReplies.length>0?'ready':'listening');};
+    const onFinish=()=>{
+      currentUtterance=null;
+      isSpeaking=false;
+      // TTS終了後に音声認識を再開
+      if(isRecording&&recognition){
+        setTimeout(()=>{
+          try{recognition.start();}catch(e){}
+          pendingUserText='';lastFinalTranscript='';lastSentText='';
+        },500);
+      }
+      updateSignal(pendingReplies.length>0?'ready':'listening');
+    };
+    u.onend=onFinish;
+    u.onerror=onFinish;
     window.speechSynthesis.speak(u);
   }
 
