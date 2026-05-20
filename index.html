@@ -728,9 +728,10 @@
     try {
       const sys = buildSystemPrompt();
       const res = await fetch('/api/chat', {
-  　　　　　headers: {
-    　　　　　　'Content-Type': 'application/json',
-  　　　　　},
+  　　　　method: 'POST',
+         headers: {
+    　　　　'Content-Type': 'application/json',
+         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 512,
@@ -920,11 +921,10 @@ ${historyContext}
 簡潔に、200〜300文字程度で。`;
 
       const res = await fetch('/api/chat', {
-        headers: {
-           'Content-Type': 'application/json',
-        },
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+        headers: {
+         'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 800,
